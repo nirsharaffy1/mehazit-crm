@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   if (!ok) return NextResponse.json({ error: "הסיסמה הנוכחית שגויה" }, { status: 400 });
 
   const hash = await bcrypt.hash(next, 12);
-  await prisma.crmUser.update({ where: { id: user.id }, data: { passwordHash: hash } });
+  await prisma.crmUser.update({ where: { id: user.id }, data: { passwordHash: hash, temporaryPassword: null } });
 
   return NextResponse.json({ ok: true });
 }

@@ -329,8 +329,10 @@ model CrmUser {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  domainId String?
-  domain   CrmDomain? @relation(fields: [domainId], references: [id])
+  domainId          String?
+  domain            CrmDomain?  @relation("UserPrimaryDomain", fields: [domainId], references: [id])
+  extraDomains      CrmDomain[] @relation("UserExtraDomains")
+  temporaryPassword String?
 
   weeklyVisitTarget Int @default(0)
 
@@ -348,8 +350,9 @@ model CrmDomain {
   name      String     @unique
   createdAt DateTime   @default(now())
 
-  users     CrmUser[]
-  complexes CrmComplex[]
+  users         CrmUser[]  @relation("UserPrimaryDomain")
+  extraManagers CrmUser[]  @relation("UserExtraDomains")
+  complexes     CrmComplex[]
 
   @@map("CrmDomain")
 }

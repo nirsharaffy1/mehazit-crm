@@ -37,10 +37,14 @@ export default function RegionsClient({ domains: initial }: { domains: Domain[] 
     setLoading(false);
   }
 
-  async function deleteDomain(id: string) {
-    if (!confirm("למחוק תחום זה?")) return;
-    await fetch(`/api/regions/${id}`, { method: "DELETE" });
-    setDomains(d => d.filter(x => x.id !== id));
+  async function deleteDomain(id: string, name: string, usersCount: number, complexesCount: number) {
+    const hasLinks = usersCount > 0 || complexesCount > 0;
+    const msg = hasLinks
+      ? `למחוק את התחום "${name}"?\nשים לב: ${usersCount > 0 ? `${usersCount} משתמשים` : ""}${usersCount > 0 && complexesCount > 0 ? " ו-" : ""}${complexesCount > 0 ? `${complexesCount} מתחמים` : ""} מקושרים אליו ויאבדו את שיוך התחום.`
+      : `למחוק את התחום "${name}"?`;
+    if (!confirm(msg)) return;
+    const res = await fetch(`/api/regions/${id}`, { method: "DELETE" });
+    if (res.ok) setDomains(d => d.filter(x => x.id !== id));
   }
 
   return (
@@ -75,11 +79,13 @@ export default function RegionsClient({ domains: initial }: { domains: Domain[] 
               <button onClick={() => { setEditing(d.id); setEditName(d.name); }} className="btn-ghost p-2 text-dark/50 hover:text-dark dark:text-cream/50 dark:hover:text-cream">
                 <Pencil size={15} />
               </button>
-              {d._count.users === 0 && d._count.complexes === 0 && (
-                <button onClick={() => deleteDomain(d.id)} className="btn-ghost p-2 text-red-500 hover:bg-red-500/10 border-red-200 dark:border-red-900">
-                  <Trash2 size={15} />
-                </button>
-              )}
+              <button
+                onClick={() => deleteDomain(d.id, d.name, d._count.users, d._count.complexes)}
+                className="btn-ghost p-2 text-red-500 hover:bg-red-500/10 border-red-200 dark:border-red-900"
+                title="מחיקת תחום"
+              >
+                <Trash2 size={15} />
+              </button>
             </>
           )}
         </div>

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Circle } from "lucide-react";
+import { Circle, Eye, EyeOff } from "lucide-react";
 import { ROLE_LABELS } from "@/types";
 import WeeklyTargetCell from "@/components/features/WeeklyTargetCell";
 import EditUserModal from "@/components/features/EditUserModal";
@@ -13,10 +13,12 @@ interface User {
   phone: string | null;
   role: string;
   domainId: string | null;
+  extraDomains: { id: string; name: string }[];
   isActive: boolean;
   weeklyVisitTarget: number;
   lastLoginAt: Date | null;
   domain: { id: string; name: string } | null;
+  temporaryPassword: string | null;
 }
 
 interface Domain {
@@ -28,6 +30,21 @@ interface Props {
   initialUsers: User[];
   domains: Domain[];
   visitsByUser: Record<string, number>;
+}
+
+function PasswordCell({ password }: { password: string | null }) {
+  const [show, setShow] = useState(false);
+  if (!password) return <span className="text-xs text-dark/20 dark:text-cream/20">שונתה</span>;
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className={`text-xs font-mono ${show ? "text-dark dark:text-cream" : "text-dark/40 dark:text-cream/40 tracking-widest"}`}>
+        {show ? password : "••••••"}
+      </span>
+      <button onClick={() => setShow(s => !s)} className="text-dark/30 dark:text-cream/30 hover:text-gold">
+        {show ? <EyeOff size={12} /> : <Eye size={12} />}
+      </button>
+    </div>
+  );
 }
 
 export default function UsersTableClient({ initialUsers, domains, visitsByUser }: Props) {
@@ -47,6 +64,7 @@ export default function UsersTableClient({ initialUsers, domains, visitsByUser }
               <th className="px-4 py-3 text-xs font-medium text-dark/50 dark:text-cream/50 hidden md:table-cell">אימייל</th>
               <th className="px-4 py-3 text-xs font-medium text-dark/50 dark:text-cream/50">תפקיד</th>
               <th className="px-4 py-3 text-xs font-medium text-dark/50 dark:text-cream/50 hidden md:table-cell">תחום</th>
+              <th className="px-4 py-3 text-xs font-medium text-dark/50 dark:text-cream/50 hidden lg:table-cell">סיסמה</th>
               <th className="px-4 py-3 text-xs font-medium text-dark/50 dark:text-cream/50 hidden lg:table-cell">יעד שבועי</th>
               <th className="px-4 py-3 text-xs font-medium text-dark/50 dark:text-cream/50 hidden lg:table-cell">כניסה אחרונה</th>
               <th className="px-4 py-3 text-xs font-medium text-dark/50 dark:text-cream/50">סטטוס</th>
@@ -56,6 +74,10 @@ export default function UsersTableClient({ initialUsers, domains, visitsByUser }
           <tbody className="divide-y divide-line">
             {users.map((u) => {
               const roleKey = u.role as keyof typeof ROLE_LABELS;
+              const allDomains = [
+                ...(u.domain ? [u.domain.name] : []),
+                ...u.extraDomains.filter(d => d.id !== u.domainId).map(d => d.name),
+              ];
               return (
                 <tr key={u.id} className="hover:bg-offwhite dark:hover:bg-dark-soft transition-colors">
                   <td className="px-4 py-3">
@@ -75,8 +97,11 @@ export default function UsersTableClient({ initialUsers, domains, visitsByUser }
                       {ROLE_LABELS[roleKey] ?? u.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-dark/60 dark:text-cream/60 hidden md:table-cell">
-                    {u.domain?.name ?? "—"}
+                  <td className="px-4 py-3 text-dark/60 dark:text-cream/60 hidden md:table-cell text-xs">
+                    {allDomains.length > 0 ? allDomains.join(", ") : "—"}
+                  </td>
+                  <td className="px-4 py-3 hidden lg:table-cell">
+                    <PasswordCell password={u.temporaryPassword} />
                   </td>
                   <td className="px-4 py-3 hidden lg:table-cell">
                     {u.role === "AREA_MANAGER" ? (

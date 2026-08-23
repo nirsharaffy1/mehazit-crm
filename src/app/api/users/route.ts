@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     : role ? { role } : {};
   const users = await prisma.crmUser.findMany({
     where: { isActive: true, ...roleFilter },
-    select: { id: true, fullName: true, email: true, role: true, phone: true, domainId: true, domain: { select: { name: true } }, lastLoginAt: true, createdAt: true },
+    select: { id: true, fullName: true, email: true, role: true, phone: true, domainId: true, domain: { select: { name: true } }, extraDomains: { select: { id: true, name: true } }, temporaryPassword: true, lastLoginAt: true, createdAt: true },
     orderBy: { fullName: "asc" },
   });
   return NextResponse.json({ users });
@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
       phone: body.phone || null,
       role: body.role,
       domainId: body.domainId || null,
+      temporaryPassword: body.password,
     },
   });
 

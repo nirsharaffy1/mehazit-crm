@@ -64,17 +64,26 @@ async function getStats(role: CrmRole, userId: string, domainId: string | null) 
   }
 
   if (role === "DOMAIN_MANAGER") {
-    // Show complexes in this manager's domain OR directly assigned to them
+    // Get all domain IDs this manager is responsible for (primary + extra)
+    const userDomains = await prisma.crmUser.findUnique({
+      where: { id: userId },
+      select: { extraDomains: { select: { id: true } } },
+    });
+    const allDomainIds = [
+      ...(domainId ? [domainId] : []),
+      ...(userDomains?.extraDomains.map(d => d.id) ?? []),
+    ];
+
     const complexOR = [
-      ...(domainId ? [{ domainId }] : []),
+      ...(allDomainIds.length > 0 ? [{ domainId: { in: allDomainIds } }] : []),
       { assignments: { some: { userId, isActive: true } } },
     ];
     const assignmentOR = [
-      ...(domainId ? [{ complex: { domainId } }] : []),
+      ...(allDomainIds.length > 0 ? [{ complex: { domainId: { in: allDomainIds } } }] : []),
       { userId },
     ];
     const visitComplexOR = [
-      ...(domainId ? [{ domainId }] : []),
+      ...(allDomainIds.length > 0 ? [{ domainId: { in: allDomainIds } }] : []),
       { assignments: { some: { userId } } },
     ];
 

@@ -11,13 +11,21 @@ export default async function MyTeamPage() {
   const userId = session.user.id;
   const domainId = session.user.domainId;
 
-  // All complexes this manager is responsible for:
-  // 1. Complexes in their domain
-  // 2. Complexes they are directly assigned to
+  // Get all domain IDs (primary + extra)
+  const userWithDomains = await prisma.crmUser.findUnique({
+    where: { id: userId },
+    select: { extraDomains: { select: { id: true } } },
+  });
+  const allDomainIds = [
+    ...(domainId ? [domainId] : []),
+    ...(userWithDomains?.extraDomains.map(d => d.id) ?? []),
+  ];
+
+  // All complexes this manager is responsible for
   const [domainComplexIds, assignedComplexIds] = await Promise.all([
-    domainId
+    allDomainIds.length > 0
       ? prisma.crmComplex
-          .findMany({ where: { domainId, isActive: true }, select: { id: true } })
+          .findMany({ where: { domainId: { in: allDomainIds }, isActive: true }, select: { id: true } })
           .then((rows) => rows.map((r) => r.id))
       : Promise.resolve([] as string[]),
     prisma.crmComplexAssignment

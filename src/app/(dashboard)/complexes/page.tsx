@@ -18,19 +18,27 @@ async function getComplexes(role: CrmRole, userId: string, domainId: string | nu
     return { assignments, complexes: null };
   }
 
-  // DOMAIN_MANAGER: complexes in their domain OR directly assigned to them
-  const whereComplex = role === "DOMAIN_MANAGER"
-    ? {
-        isActive: true,
-        OR: [
-          ...(domainId ? [{ domainId }] : []),
-          { assignments: { some: { userId, isActive: true } } },
-        ],
-      }
-    : { isActive: true };
+  let whereComplex: object = { isActive: true };
+  if (role === "DOMAIN_MANAGER") {
+    const userDomains = await prisma.crmUser.findUnique({
+      where: { id: userId },
+      select: { extraDomains: { select: { id: true } } },
+    });
+    const allDomainIds = [
+      ...(domainId ? [domainId] : []),
+      ...(userDomains?.extraDomains.map(d => d.id) ?? []),
+    ];
+    whereComplex = {
+      isActive: true,
+      OR: [
+        ...(allDomainIds.length > 0 ? [{ domainId: { in: allDomainIds } }] : []),
+        { assignments: { some: { userId, isActive: true } } },
+      ],
+    };
+  }
 
   const complexes = await prisma.crmComplex.findMany({
-    where: whereComplex,
+    where: whereComplex as Parameters<typeof prisma.crmComplex.findMany>[0]["where"],
     include: {
       domain: true,
       assignments: {

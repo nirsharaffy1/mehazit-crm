@@ -29,7 +29,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const { id } = await params;
   const body = await req.json();
-  const { fullName, email, phone, role, domainId, isActive } = body;
+  const { fullName, email, phone, role, domainId, extraDomainIds, isActive } = body;
 
   if (!fullName || !email || !role) {
     return NextResponse.json({ error: "שם, אימייל ותפקיד הם שדות חובה" }, { status: 400 });
@@ -44,8 +44,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       role: role as CrmRole,
       domainId: domainId || null,
       isActive: Boolean(isActive),
+      extraDomains: extraDomainIds
+        ? { set: (extraDomainIds as string[]).map(did => ({ id: did })) }
+        : undefined,
     },
-    include: { domain: true },
+    include: { domain: true, extraDomains: { select: { id: true, name: true } } },
   });
 
   return NextResponse.json(user);

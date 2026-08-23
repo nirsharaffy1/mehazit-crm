@@ -19,6 +19,11 @@ export async function DELETE(_: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+  // Detach users and complexes before deleting
+  await Promise.all([
+    prisma.crmUser.updateMany({ where: { domainId: id }, data: { domainId: null } }),
+    prisma.crmComplex.updateMany({ where: { domainId: id }, data: { domainId: null } }),
+  ]);
   await prisma.crmDomain.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

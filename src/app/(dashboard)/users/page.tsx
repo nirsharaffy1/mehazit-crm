@@ -22,7 +22,7 @@ export default async function UsersPage() {
 
   const [users, weekVisits, domains] = await Promise.all([
     prisma.crmUser.findMany({
-      include: { domain: true },
+      include: { domain: true, extraDomains: true },
       orderBy: [{ role: "asc" }, { fullName: "asc" }],
     }),
     prisma.crmVisit.groupBy({
@@ -46,6 +46,8 @@ export default async function UsersPage() {
         initialUsers={users.map(u => ({
           ...u,
           lastLoginAt: u.lastLoginAt ?? null,
+          extraDomains: u.extraDomains ?? [],
+          temporaryPassword: u.temporaryPassword ?? null,
         }))}
         domains={domains}
         visitsByUser={visitsByUser}

@@ -10,10 +10,12 @@ interface User {
   phone: string | null;
   role: string;
   domainId: string | null;
+  extraDomains: { id: string; name: string }[];
   isActive: boolean;
   weeklyVisitTarget: number;
   lastLoginAt: Date | null;
   domain: { id: string; name: string } | null;
+  temporaryPassword: string | null;
 }
 
 interface Domain {
@@ -35,6 +37,7 @@ export default function EditUserModal({ user, domains, onSaved }: Props) {
     phone: user.phone ?? "",
     role: user.role,
     domainId: user.domainId ?? "",
+    extraDomainIds: user.extraDomains.map(d => d.id),
     isActive: user.isActive,
   });
   const [loading, setLoading] = useState(false);
@@ -42,6 +45,15 @@ export default function EditUserModal({ user, domains, onSaved }: Props) {
 
   function set(k: string, v: string | boolean) {
     setForm(f => ({ ...f, [k]: v }));
+  }
+
+  function toggleExtraDomain(id: string) {
+    setForm(f => ({
+      ...f,
+      extraDomainIds: f.extraDomainIds.includes(id)
+        ? f.extraDomainIds.filter(x => x !== id)
+        : [...f.extraDomainIds, id],
+    }));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -52,16 +64,22 @@ export default function EditUserModal({ user, domains, onSaved }: Props) {
       const res = await fetch(`/api/users/${user.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, domainId: form.domainId || null }),
+        body: JSON.stringify({
+          ...form,
+          domainId: form.domainId || null,
+          extraDomainIds: form.extraDomainIds,
+        }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error ?? "שגיאה"); return; }
-      onSaved(data);
+      onSaved({ ...user, ...data, extraDomains: data.extraDomains ?? [] });
       setOpen(false);
     } finally {
       setLoading(false);
     }
   }
+
+  const showDomains = form.role === "DOMAIN_MANAGER" || form.role === "AREA_MANAGER";
 
   return (
     <>
@@ -76,7 +94,7 @@ export default function EditUserModal({ user, domains, onSaved }: Props) {
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setOpen(false)}>
           <div className="absolute inset-0 bg-black/60" />
-          <div className="relative w-full max-w-md card p-6" onClick={e => e.stopPropagation()}>
+          <div className="relative w-full max-w-md card p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-semibold text-dark dark:text-cream">עריכת משתמש</h2>
               <button onClick={() => setOpen(false)} className="text-dark/30 dark:text-cream/30 hover:text-dark dark:hover:text-cream">
@@ -106,13 +124,42 @@ export default function EditUserModal({ user, domains, onSaved }: Props) {
                     ))}
                   </select>
                 </div>
-                <div className="col-span-2">
-                  <label className="form-label">תחום</label>
-                  <select value={form.domainId} onChange={e => set("domainId", e.target.value)} className="input w-full">
-                    <option value="">ללא תחום</option>
-                    {domains.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                  </select>
-                </div>
+
+                {showDomains && (
+                  <div className="col-span-2">
+                    <label className="form-label">
+                      {form.role === "DOMAIN_MANAGER" ? "תחומים (ניתן לבחור כמה)" : "תחום"}
+                    </label>
+                    {form.role === "DOMAIN_MANAGER" ? (
+                      <div className="border border-line rounded-lg p-2 space-y-1 max-h-40 overflow-y-auto bg-offwhite dark:bg-dark-soft">
+                        {domains.map(d => (
+                          <label key={d.id} className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gold/10 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={form.extraDomainIds.includes(d.id) || form.domainId === d.id}
+                              onChange={() => {
+                                if (form.domainId === d.id) {
+                                  set("domainId", "");
+                                  if (!form.extraDomainIds.includes(d.id)) toggleExtraDomain(d.id);
+                                } else {
+                                  toggleExtraDomain(d.id);
+                                }
+                              }}
+                              className="accent-gold"
+                            />
+                            <span className="text-sm text-dark dark:text-cream">{d.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    ) : (
+                      <select value={form.domainId} onChange={e => set("domainId", e.target.value)} className="input w-full">
+                        <option value="">ללא תחום</option>
+                        {domains.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                      </select>
+                    )}
+                  </div>
+                )}
+
                 <div className="col-span-2 flex items-center gap-2">
                   <input
                     type="checkbox"
