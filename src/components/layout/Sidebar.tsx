@@ -4,12 +4,13 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   LayoutDashboard, Building2, Users, MapPin, BarChart3,
-  Activity, LogOut, ChevronLeft, Menu, X, Sun, Moon, Link2, Bell, Map, CalendarDays
+  Activity, LogOut, ChevronLeft, Menu, X, Sun, Moon, Link2, Bell, Map, CalendarDays, KeyRound
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { CrmRole, ROLE_LABELS } from "@/types";
+import ChangePasswordModal from "@/components/features/ChangePasswordModal";
 
 interface SidebarProps {
   userRole: CrmRole;
@@ -34,6 +35,7 @@ export default function Sidebar({ userRole, userName }: SidebarProps) {
   const { theme, setTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [reminderBadge, setReminderBadge] = useState(0);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   useEffect(() => {
     if (userRole === "AREA_MANAGER") return;
@@ -89,9 +91,18 @@ export default function Sidebar({ userRole, userName }: SidebarProps) {
           <span>{theme === "dark" ? "מצב בהיר" : "מצב כהה"}</span>
         </button>
 
-        <div className="px-3 py-2.5 rounded-lg bg-white/5">
-          <p className="text-cream text-sm font-medium truncate">{userName}</p>
-          <p className="text-cream/40 text-xs">{ROLE_LABELS[userRole]}</p>
+        <div className="px-3 py-2.5 rounded-lg bg-white/5 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-cream text-sm font-medium truncate">{userName}</p>
+            <p className="text-cream/40 text-xs">{ROLE_LABELS[userRole]}</p>
+          </div>
+          <button
+            onClick={() => setShowChangePassword(true)}
+            className="text-cream/40 hover:text-gold flex-shrink-0"
+            title="שינוי סיסמה"
+          >
+            <KeyRound size={15} />
+          </button>
         </div>
 
         <button
@@ -107,6 +118,7 @@ export default function Sidebar({ userRole, userName }: SidebarProps) {
 
   return (
     <>
+      {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
       <aside className="hidden md:flex flex-col w-56 flex-shrink-0 bg-dark-sidebar border-l border-white/10 h-screen sticky top-0">
         <SidebarContent />
       </aside>
