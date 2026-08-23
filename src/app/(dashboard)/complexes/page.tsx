@@ -97,6 +97,7 @@ export default async function ComplexesPage() {
           complexes={serializedComplexes}
           assignments={serializedAssignments}
           isAreaManager={isAreaManager}
+          isAdmin={role === "GENERAL_ADMIN"}
         />
       )}
     </div>

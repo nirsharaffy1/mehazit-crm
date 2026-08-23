@@ -11,6 +11,9 @@ interface User {
   role: string;
   domainId: string | null;
   isActive: boolean;
+  weeklyVisitTarget: number;
+  lastLoginAt: Date | null;
+  domain: { id: string; name: string } | null;
 }
 
 interface Domain {
