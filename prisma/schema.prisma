@@ -1,0 +1,477 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Existing website tables (keep as-is) ────────────────────────────────────
+
+enum Role {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+  RESIDENT
+  DEVELOPER
+  GUEST
+}
+
+enum ProjectStatus {
+  MAPPING
+  ORGANIZING
+  REPRESENTATION
+  PROFESSIONALS
+  DEVELOPER_SELECTION
+  PLANNING
+  PERMITS
+  CONSTRUCTION
+  COMPLETED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  BLOCKED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  IN_PROGRESS
+  WON
+  LOST
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  phone        String?
+  passwordHash String
+  fullName     String
+  role         Role     @default(GUEST)
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employee      Employee?
+  manager       Manager?
+  resident      Resident?
+  tasks         Task[]
+  notifications Notification[]
+  activityLogs  ActivityLog[]
+  permissions   UserPermission[]
+}
+
+model Role_Permission {
+  id           String     @id @default(cuid())
+  role         Role
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([role, permissionId])
+}
+
+model Permission {
+  id          String @id @default(cuid())
+  key         String @unique
+  description String?
+
+  rolePermissions Role_Permission[]
+  userPermissions UserPermission[]
+}
+
+model UserPermission {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([userId, permissionId])
+}
+
+model Employee {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id])
+  department String
+  title      String
+  managerId  String?
+  manager    Manager? @relation(fields: [managerId], references: [id])
+  qrCode     String   @unique
+  hiredAt    DateTime @default(now())
+}
+
+model Manager {
+  id         String     @id @default(cuid())
+  userId     String     @unique
+  user       User       @relation(fields: [userId], references: [id])
+  regionName String
+  cityIds    String[]
+  employees  Employee[]
+  projects   Project[]
+}
+
+model City {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  region   String?
+  lat      Float
+  lng      Float
+  projects Project[]
+}
+
+model Project {
+  id              String        @id @default(cuid())
+  name            String
+  slug            String        @unique
+  cityId          String
+  city            City          @relation(fields: [cityId], references: [id])
+  status          ProjectStatus @default(MAPPING)
+  progressPercent Int           @default(0)
+  managerId       String?
+  manager         Manager?      @relation(fields: [managerId], references: [id])
+  managerName     String?
+  lat             Float
+  lng             Float
+  gush            String?
+  helka           String?
+  developerName   String?
+  unitCount       Int?
+  description     String?
+  coverImageUrl   String?
+  gallery         String[]
+  buildings       Building[]
+  residents       Resident[]
+  files           File[]
+  meetings        Meeting[]
+  leads           Lead[]
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+model Building {
+  id        String     @id @default(cuid())
+  projectId String
+  project   Project    @relation(fields: [projectId], references: [id])
+  address   String
+  gush      String?
+  helka     String?
+  unitCount Int?
+  residents Resident[]
+}
+
+model Resident {
+  id         String    @id @default(cuid())
+  userId     String?   @unique
+  user       User?     @relation(fields: [userId], references: [id])
+  fullName   String
+  phone      String
+  email      String?
+  projectId  String
+  project    Project   @relation(fields: [projectId], references: [id])
+  buildingId String?
+  building   Building? @relation(fields: [buildingId], references: [id])
+  apartment  String?
+  signedPoA  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+}
+
+model Article {
+  id          String   @id @default(cuid())
+  title       String
+  excerpt     String
+  category    String
+  readMinutes Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Course {
+  id            String   @id @default(cuid())
+  title         String
+  slug          String   @unique
+  description   String?
+  coverImageUrl String?
+  lessons       Lesson[]
+  createdAt     DateTime @default(now())
+}
+
+model Lesson {
+  id              String  @id @default(cuid())
+  courseId        String
+  course          Course  @relation(fields: [courseId], references: [id])
+  title           String
+  order           Int
+  videoUrl        String?
+  presentationUrl String?
+  content         String?
+}
+
+model File {
+  id         String   @id @default(cuid())
+  projectId  String?
+  project    Project? @relation(fields: [projectId], references: [id])
+  name       String
+  url        String
+  mimeType   String
+  sizeBytes  Int
+  uploadedAt DateTime @default(now())
+}
+
+model Meeting {
+  id        String   @id @default(cuid())
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+  title     String
+  startsAt  DateTime
+  location  String?
+  notes     String?
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  body      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  assigneeId  String
+  assignee    User       @relation(fields: [assigneeId], references: [id])
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  dueDate     DateTime?
+  createdAt   DateTime   @default(now())
+}
+
+model Lead {
+  id        String     @id @default(cuid())
+  fullName  String
+  phone     String
+  email     String?
+  projectId String?
+  project   Project?   @relation(fields: [projectId], references: [id])
+  source    String
+  message   String?
+  consent   Boolean    @default(false)
+  status    LeadStatus @default(NEW)
+  notes     LeadNote[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([projectId])
+  @@index([status])
+}
+
+model LeadNote {
+  id        String   @id @default(cuid())
+  leadId    String
+  lead      Lead     @relation(fields: [leadId], references: [id])
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+// ─── CRM tables (new) ─────────────────────────────────────────────────────────
+
+enum CrmRole {
+  GENERAL_ADMIN
+  DOMAIN_MANAGER
+  AREA_MANAGER
+}
+
+enum EngagementLevel {
+  HIGH
+  MEDIUM
+  LOW
+  NO_CONTACT
+}
+
+enum CrmProjectPhase {
+  INITIAL_CONTACT
+  SURVEY
+  AGREEMENTS
+  URBAN_PLAN
+  PERMITS
+  CONSTRUCTION
+}
+
+model CrmUser {
+  id           String    @id @default(cuid())
+  email        String    @unique @map("crm_email")
+  passwordHash String
+  fullName     String
+  phone        String?
+  role         CrmRole
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  domainId String?
+  domain   CrmDomain? @relation(fields: [domainId], references: [id])
+
+  weeklyVisitTarget Int @default(0)
+
+  assignments  CrmComplexAssignment[]
+  visits       CrmVisit[]
+  activityLogs CrmActivityLog[]
+  sessions     CrmSession[]
+  notes        CrmComplexNote[]
+
+  @@map("CrmUser")
+}
+
+model CrmDomain {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+
+  users     CrmUser[]
+  complexes CrmComplex[]
+
+  @@map("CrmDomain")
+}
+
+model CrmComplex {
+  id            String           @id @default(cuid())
+  name          String
+  address       String
+  city          String
+  domainId      String?
+  domain        CrmDomain?       @relation(fields: [domainId], references: [id])
+  gush          String?
+  helka         String?
+  unitCount     Int?
+  buildingCount Int?
+  developerName String?
+  description   String?
+  isActive      Boolean          @default(true)
+  lat           Float?
+  lng           Float?
+  phase         CrmProjectPhase  @default(INITIAL_CONTACT)
+  phaseUpdatedAt DateTime?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  assignments CrmComplexAssignment[]
+  visits      CrmVisit[]
+  notes       CrmComplexNote[]
+  residents   CrmResidentContact[]
+
+  @@map("CrmComplex")
+}
+
+model CrmComplexAssignment {
+  id           String     @id @default(cuid())
+  complexId    String
+  complex      CrmComplex @relation(fields: [complexId], references: [id])
+  userId       String
+  user         CrmUser    @relation(fields: [userId], references: [id])
+  assignedById String
+  deadlineDays Int
+  assignedAt   DateTime   @default(now())
+  deadlineAt   DateTime
+  isActive     Boolean    @default(true)
+  note         String?
+
+  @@index([complexId])
+  @@index([userId])
+  @@map("CrmComplexAssignment")
+}
+
+model CrmVisit {
+  id                String          @id @default(cuid())
+  complexId         String
+  complex           CrmComplex      @relation(fields: [complexId], references: [id])
+  userId            String
+  user              CrmUser         @relation(fields: [userId], references: [id])
+  visitDate         DateTime
+  engagement        EngagementLevel
+  residentsMetCount Int?
+  newSignatures     Int             @default(0)
+  hasAmidorAmigur   Boolean         @default(false)
+  notes             String?
+  nextVisitDate     DateTime?
+  fileUrls          String[]
+  createdAt         DateTime        @default(now())
+
+  @@index([complexId])
+  @@index([userId])
+  @@map("CrmVisit")
+}
+
+model CrmActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      CrmUser  @relation(fields: [userId], references: [id])
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("CrmActivityLog")
+}
+
+model CrmComplexNote {
+  id        String     @id @default(cuid())
+  complexId String
+  complex   CrmComplex @relation(fields: [complexId], references: [id])
+  userId    String
+  user      CrmUser    @relation(fields: [userId], references: [id])
+  content   String
+  createdAt DateTime   @default(now())
+
+  @@index([complexId])
+  @@map("CrmComplexNote")
+}
+
+model CrmResidentContact {
+  id        String     @id @default(cuid())
+  complexId String
+  complex   CrmComplex @relation(fields: [complexId], references: [id])
+  fullName  String
+  phone     String
+  apartment String?
+  building  String?
+  signedPoA Boolean    @default(false)
+  notes     String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([complexId])
+  @@map("CrmResidentContact")
+}
+
+model CrmSession {
+  id              String    @id @default(cuid())
+  userId          String
+  user            CrmUser   @relation(fields: [userId], references: [id])
+  startedAt       DateTime  @default(now())
+  endedAt         DateTime?
+  durationSeconds Int?
+
+  @@index([userId])
+  @@map("CrmSession")
+}
