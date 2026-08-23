@@ -57,7 +57,7 @@ export default function UsersTableClient({ initialUsers, domains, visitsByUser }
             {users.map((u) => {
               const roleKey = u.role as keyof typeof ROLE_LABELS;
               return (
-                <tr key={u.id} className="hover:bg-offwhite dark:hover:bg-dark-soft transition-colors group">
+                <tr key={u.id} className="hover:bg-offwhite dark:hover:bg-dark-soft transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-gold/15 flex items-center justify-center flex-shrink-0">

@@ -64,7 +64,7 @@ export default function EditUserModal({ user, domains, onSaved }: Props) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="opacity-0 group-hover:opacity-100 text-dark/30 dark:text-cream/30 hover:text-gold transition-opacity"
+        className="text-dark/30 dark:text-cream/30 hover:text-gold transition-colors"
         title="עריכה"
       >
         <Pencil size={14} />
