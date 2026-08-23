@@ -3,12 +3,14 @@ import { useState } from "react";
 import Link from "next/link";
 import { Building2, MapPin, Clock, LayoutGrid, List, Trash2, X } from "lucide-react";
 import { daysRemaining, deadlineColor, formatDate } from "@/lib/utils";
+import { PHASE_LABELS } from "@/types";
 
 export interface ComplexItem {
   id: string;
   name: string;
   city: string;
   address: string;
+  phase: string;
   domain: { name: string } | null;
   assignments: Array<{ id: string; user: { fullName: string }; deadlineAt: string; deadlineDays: number }>;
   _count: { visits: number };
@@ -170,9 +172,12 @@ export default function ComplexListClient({ complexes, assignments, isAreaManage
               <div key={c.id} className="card p-4 hover:border-gold transition-all">
                 <div className="flex items-start justify-between gap-3">
                   <Link href={`/complexes/${c.id}`} className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h2 className="text-sm font-semibold text-dark dark:text-cream truncate hover:text-gold transition-colors">{c.name}</h2>
                       {c.domain && <span className="badge badge-gray text-xs">{c.domain.name}</span>}
+                      <span className="badge text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+                        {PHASE_LABELS[c.phase as keyof typeof PHASE_LABELS] ?? c.phase}
+                      </span>
                     </div>
                     <p className="flex items-center gap-1 text-xs text-dark/50 dark:text-cream/50">
                       <MapPin size={11} /> {c.address}, {c.city}
@@ -216,6 +221,7 @@ export default function ComplexListClient({ complexes, assignments, isAreaManage
               <thead>
                 <tr className="border-b border-line bg-offwhite dark:bg-dark-soft">
                   <th className="text-right px-4 py-2.5 text-xs font-semibold text-dark/50 dark:text-cream/50">מתחם</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-semibold text-dark/50 dark:text-cream/50">שלב</th>
                   <th className="text-right px-4 py-2.5 text-xs font-semibold text-dark/50 dark:text-cream/50">עיר</th>
                   <th className="text-right px-4 py-2.5 text-xs font-semibold text-dark/50 dark:text-cream/50">תחום</th>
                   <th className="text-right px-4 py-2.5 text-xs font-semibold text-dark/50 dark:text-cream/50">מנהל איזור</th>
@@ -235,6 +241,11 @@ export default function ComplexListClient({ complexes, assignments, isAreaManage
                         <Link href={`/complexes/${c.id}`} className="font-medium text-dark dark:text-cream hover:text-gold transition-colors">
                           {c.name}
                         </Link>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 whitespace-nowrap">
+                          {PHASE_LABELS[c.phase as keyof typeof PHASE_LABELS] ?? c.phase}
+                        </span>
                       </td>
                       <td className="px-4 py-2.5 text-dark/60 dark:text-cream/60">{c.city}</td>
                       <td className="px-4 py-2.5 text-dark/60 dark:text-cream/60">{c.domain?.name ?? "—"}</td>

@@ -12,6 +12,7 @@ import AssignModal from "@/components/features/AssignModal";
 import EditDeadlineButton from "@/components/features/EditDeadlineButton";
 import AddVisitModal from "@/components/features/AddVisitModal";
 import PhaseTimeline from "@/components/features/PhaseTimeline";
+import AssemblyDetails from "@/components/features/AssemblyDetails";
 import ComplexNotes from "@/components/features/ComplexNotes";
 import ResidentContacts from "@/components/features/ResidentContacts";
 import PrintButton from "@/components/features/PrintButton";
@@ -152,6 +153,20 @@ export default async function ComplexDetailPage({ params }: { params: Promise<{ 
           <Layers size={16} className="text-gold" /> שלב הפרויקט
         </h2>
         <PhaseTimeline complexId={complex.id} initialPhase={complex.phase} canEdit={canAssign} />
+        {complex.phase === "SURVEY" && (
+          <div className="mt-4 pt-4 border-t border-line">
+            <p className="text-xs font-semibold text-dark/50 dark:text-cream/50 mb-1 flex items-center gap-1.5">
+              <Calendar size={13} className="text-gold" /> פרטי כנס דיירים
+            </p>
+            <AssemblyDetails
+              complexId={complex.id}
+              initialDate={complex.assemblyDate?.toISOString() ?? null}
+              initialTime={complex.assemblyTime ?? null}
+              initialLocation={complex.assemblyLocation ?? null}
+              canEdit={canAssign}
+            />
+          </div>
+        )}
       </div>
 
       {/* Assignment */}

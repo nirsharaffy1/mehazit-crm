@@ -75,6 +75,7 @@ export default async function ComplexesPage() {
     name: c.name,
     city: c.city,
     address: c.address,
+    phase: c.phase,
     domain: c.domain ? { name: c.domain.name } : null,
     assignments: c.assignments.map((a) => ({
       id: a.id,

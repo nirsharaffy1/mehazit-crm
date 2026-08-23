@@ -24,7 +24,7 @@ export const ENGAGEMENT_COLORS: Record<EngagementLevel, string> = {
 
 export const PHASE_LABELS: Record<CrmProjectPhase, string> = {
   INITIAL_CONTACT: "גישוש ראשוני",
-  SURVEY: "סקר דיירים",
+  SURVEY: "כנס דיירים",
   AGREEMENTS: "השגת הסכמות",
   URBAN_PLAN: "תב\"ע / תכנון",
   PERMITS: "היתרים",
