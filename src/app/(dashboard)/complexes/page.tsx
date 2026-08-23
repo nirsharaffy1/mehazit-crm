@@ -18,8 +18,15 @@ async function getComplexes(role: CrmRole, userId: string, domainId: string | nu
     return { assignments, complexes: null };
   }
 
-  const whereComplex = role === "DOMAIN_MANAGER" && domainId
-    ? { isActive: true, domainId }
+  // DOMAIN_MANAGER: complexes in their domain OR directly assigned to them
+  const whereComplex = role === "DOMAIN_MANAGER"
+    ? {
+        isActive: true,
+        OR: [
+          ...(domainId ? [{ domainId }] : []),
+          { assignments: { some: { userId, isActive: true } } },
+        ],
+      }
     : { isActive: true };
 
   const complexes = await prisma.crmComplex.findMany({

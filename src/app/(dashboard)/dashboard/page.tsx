@@ -64,24 +64,38 @@ async function getStats(role: CrmRole, userId: string, domainId: string | null) 
   }
 
   if (role === "DOMAIN_MANAGER") {
+    // Show complexes in this manager's domain OR directly assigned to them
+    const complexOR = [
+      ...(domainId ? [{ domainId }] : []),
+      { assignments: { some: { userId, isActive: true } } },
+    ];
+    const assignmentOR = [
+      ...(domainId ? [{ complex: { domainId } }] : []),
+      { userId },
+    ];
+    const visitComplexOR = [
+      ...(domainId ? [{ domainId }] : []),
+      { assignments: { some: { userId } } },
+    ];
+
     const [
       myComplexes, myAssignments, overdueAssignments, urgentAssignments,
       visitsPerWeek, recentVisitComplexIds, needsAttention,
     ] = await Promise.all([
-      prisma.crmComplex.count({ where: { domainId: domainId ?? undefined, isActive: true } }),
+      prisma.crmComplex.count({ where: { isActive: true, OR: complexOR } }),
       prisma.crmComplexAssignment.findMany({
-        where: { isActive: true, complex: { domainId: domainId ?? undefined } },
+        where: { isActive: true, OR: assignmentOR },
         include: { complex: true, user: { select: { fullName: true } } },
         orderBy: { deadlineAt: "asc" }, take: 8,
       }),
       prisma.crmComplexAssignment.count({
-        where: { isActive: true, deadlineAt: { lt: now }, complex: { domainId: domainId ?? undefined } },
+        where: { isActive: true, deadlineAt: { lt: now }, OR: assignmentOR },
       }),
       prisma.crmComplexAssignment.count({
         where: {
           isActive: true,
           deadlineAt: { gt: now, lt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) },
-          complex: { domainId: domainId ?? undefined },
+          OR: assignmentOR,
         },
       }),
       Promise.all(
@@ -89,17 +103,16 @@ async function getStats(role: CrmRole, userId: string, domainId: string | null) 
           const weekStart = getWeekStart(7 - i);
           const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
           return prisma.crmVisit.count({
-            where: { visitDate: { gte: weekStart, lt: weekEnd }, complex: { domainId: domainId ?? undefined } },
+            where: { visitDate: { gte: weekStart, lt: weekEnd }, complex: { OR: visitComplexOR } },
           });
         })
       ),
       prisma.crmVisit.findMany({
-        where: { visitDate: { gte: thirtyDaysAgo }, complex: { domainId: domainId ?? undefined } },
+        where: { visitDate: { gte: thirtyDaysAgo }, complex: { OR: visitComplexOR } },
         select: { complexId: true }, distinct: ["complexId"],
       }).then((vs) => vs.map((v) => v.complexId)),
-      // Complexes with overdue assignment OR no visit in 30 days
       prisma.crmComplexAssignment.findMany({
-        where: { isActive: true, deadlineAt: { lt: now }, complex: { domainId: domainId ?? undefined } },
+        where: { isActive: true, deadlineAt: { lt: now }, OR: assignmentOR },
         include: { complex: { select: { id: true, name: true, city: true } } },
         take: 5,
         orderBy: { deadlineAt: "asc" },
