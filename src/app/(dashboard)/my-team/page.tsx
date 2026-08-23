@@ -1,7 +1,6 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { ROLE_LABELS } from "@/types";
 import { Users, Circle } from "lucide-react";
 import { formatRelative } from "@/lib/utils";
 
@@ -12,47 +11,60 @@ export default async function MyTeamPage() {
   const userId = session.user.id;
   const domainId = session.user.domainId;
 
-  // Find all complexes this manager manages (by domain or direct assignment)
-  const managedComplexes = await prisma.crmComplex.findMany({
-    where: {
-      isActive: true,
-      OR: [
-        ...(domainId ? [{ domainId }] : []),
-        { assignments: { some: { userId, isActive: true } } },
-      ],
-    },
-    select: { id: true },
-  });
-  const complexIds = managedComplexes.map((c) => c.id);
+  // Complexes this manager is directly assigned to
+  const directAssignmentComplexIds = await prisma.crmComplexAssignment
+    .findMany({ where: { userId, isActive: true }, select: { complexId: true } })
+    .then((rows) => rows.map((r) => r.complexId));
 
-  // Find all active users assigned to those complexes (exclude self)
+  // Complexes in their domain
+  const domainComplexIds = domainId
+    ? await prisma.crmComplex
+        .findMany({ where: { domainId, isActive: true }, select: { id: true } })
+        .then((rows) => rows.map((r) => r.id))
+    : [];
+
+  const allComplexIds = [...new Set([...directAssignmentComplexIds, ...domainComplexIds])];
+
+  // Team = area managers whose domainId matches OR who appear in any assignment on these complexes (active or historical)
+  const orConditions: object[] = [];
+  if (domainId) orConditions.push({ domainId });
+  if (allComplexIds.length > 0) {
+    orConditions.push({ assignments: { some: { complexId: { in: allComplexIds } } } });
+  }
+
   const [teamMembers, weekVisits] = await Promise.all([
-    prisma.crmUser.findMany({
-      where: {
-        isActive: true,
-        id: { not: userId },
-        assignments: { some: { complexId: { in: complexIds }, isActive: true } },
-      },
-      include: {
-        domain: true,
-        assignments: {
-          where: { isActive: true, complexId: { in: complexIds } },
-          include: { complex: { select: { id: true, name: true } } },
-        },
-      },
-      orderBy: [{ role: "asc" }, { fullName: "asc" }],
-    }),
-    prisma.crmVisit.groupBy({
-      by: ["userId"],
-      where: {
-        complexId: { in: complexIds },
-        visitDate: {
-          gte: (() => { const d = new Date(); d.setDate(d.getDate() - d.getDay()); d.setHours(0,0,0,0); return d; })(),
-          lt: (() => { const d = new Date(); d.setDate(d.getDate() - d.getDay() + 7); d.setHours(0,0,0,0); return d; })(),
-        },
-      },
-      _count: { id: true },
-    }),
+    orConditions.length === 0
+      ? Promise.resolve([])
+      : prisma.crmUser.findMany({
+          where: {
+            isActive: true,
+            id: { not: userId },
+            role: "AREA_MANAGER",
+            OR: orConditions,
+          },
+          include: {
+            domain: true,
+            assignments: {
+              where: { isActive: true, ...(allComplexIds.length > 0 ? { complexId: { in: allComplexIds } } : {}) },
+              include: { complex: { select: { id: true, name: true } } },
+              take: 5,
+            },
+          },
+          orderBy: { fullName: "asc" },
+        }),
+    allComplexIds.length > 0
+      ? prisma.crmVisit.groupBy({
+          by: ["userId"],
+          where: {
+            complexId: { in: allComplexIds },
+            visitDate: {
+              gte: (() => { const d = new Date(); d.setDate(d.getDate() - d.getDay()); d.setHours(0,0,0,0); return d; })(),
+              lt: (() => { const d = new Date(); d.setDate(d.getDate() - d.getDay() + 7); d.setHours(0,0,0,0); return d; })(),
+            },
+          },
+          _count: { id: true },
+        })
+      : Promise.resolve([]),
   ]);
 
   const visitsByUser = Object.fromEntries(weekVisits.map((v) => [v.userId, v._count.id]));
@@ -67,7 +79,10 @@ export default async function MyTeamPage() {
       {teamMembers.length === 0 ? (
         <div className="card p-12 text-center">
           <Users size={40} className="text-dark/20 dark:text-cream/20 mx-auto mb-3" />
-          <p className="text-dark/50 dark:text-cream/50">אין חברי צוות מוקצים למתחמים שלך עדיין</p>
+          <p className="text-dark/50 dark:text-cream/50">אין חברי צוות עדיין</p>
+          <p className="text-xs text-dark/30 dark:text-cream/30 mt-1">
+            שבץ מנהלי איזור למתחמים שלך כדי שיופיעו כאן
+          </p>
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -76,7 +91,6 @@ export default async function MyTeamPage() {
               <thead className="border-b border-line">
                 <tr className="text-right">
                   <th className="px-4 py-3 text-xs font-medium text-dark/50 dark:text-cream/50">שם</th>
-                  <th className="px-4 py-3 text-xs font-medium text-dark/50 dark:text-cream/50 hidden md:table-cell">תפקיד</th>
                   <th className="px-4 py-3 text-xs font-medium text-dark/50 dark:text-cream/50 hidden md:table-cell">מתחמים פעילים</th>
                   <th className="px-4 py-3 text-xs font-medium text-dark/50 dark:text-cream/50">ביקורים השבוע</th>
                   <th className="px-4 py-3 text-xs font-medium text-dark/50 dark:text-cream/50 hidden lg:table-cell">כניסה אחרונה</th>
@@ -98,21 +112,20 @@ export default async function MyTeamPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
-                      <span className={`badge text-xs ${u.role === "DOMAIN_MANAGER" ? "badge-green" : "badge-gray"}`}>
-                        {ROLE_LABELS[u.role]}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <div className="space-y-0.5">
-                        {u.assignments.map((a) => (
-                          <p key={a.id} className="text-xs text-dark/60 dark:text-cream/60 truncate max-w-[160px]">
-                            {a.complex.name}
-                          </p>
-                        ))}
-                      </div>
+                      {u.assignments.length > 0 ? (
+                        <div className="space-y-0.5">
+                          {u.assignments.map((a) => (
+                            <p key={a.id} className="text-xs text-dark/60 dark:text-cream/60 truncate max-w-[180px]">
+                              {a.complex.name}
+                            </p>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-dark/30 dark:text-cream/30">ללא הקצאה פעילה</span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`text-sm font-semibold ${(visitsByUser[u.id] ?? 0) > 0 ? "text-emerald-500" : "text-dark/30 dark:text-cream/30"}`}>
+                      <span className={`text-sm font-semibold tabular-nums ${(visitsByUser[u.id] ?? 0) > 0 ? "text-emerald-500" : "text-dark/30 dark:text-cream/30"}`}>
                         {visitsByUser[u.id] ?? 0}
                       </span>
                     </td>
