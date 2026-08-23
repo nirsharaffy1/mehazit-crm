@@ -1,4 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
+import type { CrmRole } from "@prisma/client";
 
 export const authConfig = {
   trustHost: true,
@@ -9,7 +10,7 @@ export const authConfig = {
     jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = (user as { role: string }).role;
+        token.role = (user as { role: CrmRole }).role;
         token.domainId = (user as { domainId: string | null }).domainId;
       }
       return token;
@@ -17,7 +18,7 @@ export const authConfig = {
     session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as string;
+        session.user.role = token.role as CrmRole;
         session.user.domainId = token.domainId as string | null;
       }
       return session;
