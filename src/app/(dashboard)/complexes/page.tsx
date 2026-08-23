@@ -74,7 +74,10 @@ export default async function ComplexesPage() {
     complex: {
       id: a.complex.id,
       name: a.complex.name,
+      address: a.complex.address,
       city: a.complex.city,
+      lat: a.complex.lat ?? null,
+      lng: a.complex.lng ?? null,
       domain: a.complex.domain ? { name: a.complex.domain.name } : null,
     },
   }));

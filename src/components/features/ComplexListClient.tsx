@@ -27,7 +27,7 @@ export interface AssignmentItem {
   complexId: string;
   deadlineAt: string;
   deadlineDays: number;
-  complex: { id: string; name: string; city: string; domain: { name: string } | null };
+  complex: { id: string; name: string; address: string; city: string; lat: number | null; lng: number | null; domain: { name: string } | null };
 }
 
 interface Props {
@@ -109,27 +109,44 @@ export default function ComplexListClient({ complexes, assignments, isAreaManage
         {assignments.map((a) => {
           const days = daysRemaining(new Date(a.deadlineAt));
           const pct = Math.max(0, Math.min(100, ((a.deadlineDays - days) / a.deadlineDays) * 100));
+          const wazeUrl = a.complex.lat && a.complex.lng
+            ? `https://waze.com/ul?ll=${a.complex.lat},${a.complex.lng}&navigate=yes`
+            : `https://waze.com/ul?q=${encodeURIComponent(`${a.complex.address}, ${a.complex.city}`)}&navigate=yes`;
           return (
-            <Link key={a.id} href={`/complexes/${a.complexId}`} className="card p-4 hover:border-gold transition-all">
+            <div key={a.id} className="card p-4 hover:border-gold transition-all">
               <div className="flex items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
+                <Link href={`/complexes/${a.complexId}`} className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h2 className="text-sm font-semibold text-dark dark:text-cream truncate">{a.complex.name}</h2>
                     {days < 0 && <span className="badge badge-red text-xs">חריגה</span>}
                     {days >= 0 && days <= 7 && <span className="badge badge-gold text-xs">דחוף</span>}
                   </div>
                   <p className="flex items-center gap-1 text-xs text-dark/50 dark:text-cream/50">
-                    <MapPin size={11} /> {a.complex.city}
+                    <MapPin size={11} /> {a.complex.address}, {a.complex.city}
                     {a.complex.domain && <> · {a.complex.domain.name}</>}
                   </p>
-                </div>
-                <div className="text-left flex-shrink-0">
-                  <p className={`text-sm font-bold tabular-nums ${deadlineColor(days)}`}>
-                    {days < 0 ? `חרג ב-${Math.abs(days)}י'` : `${days} ימים`}
-                  </p>
-                  <p className="text-xs text-dark/40 dark:text-cream/40 mt-0.5 flex items-center gap-1">
-                    <Clock size={10} /> {formatDate(new Date(a.deadlineAt))}
-                  </p>
+                </Link>
+                <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                  <div className="text-left">
+                    <p className={`text-sm font-bold tabular-nums ${deadlineColor(days)}`}>
+                      {days < 0 ? `חרג ב-${Math.abs(days)}י'` : `${days} ימים`}
+                    </p>
+                    <p className="text-xs text-dark/40 dark:text-cream/40 mt-0.5 flex items-center gap-1">
+                      <Clock size={10} /> {formatDate(new Date(a.deadlineAt))}
+                    </p>
+                  </div>
+                  <a
+                    href={wazeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#06C167]/10 text-[#06C167] hover:bg-[#06C167]/20 transition-colors border border-[#06C167]/20"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C7.03 2 3 6.03 3 11c0 3.31 1.78 6.21 4.44 7.82L12 22l4.56-3.18C19.22 17.21 21 14.31 21 11c0-4.97-4.03-9-9-9zm0 13c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
+                    </svg>
+                    נווט ב-Waze
+                  </a>
                 </div>
               </div>
               <div className="mt-3 deadline-bar">
@@ -138,7 +155,7 @@ export default function ComplexListClient({ complexes, assignments, isAreaManage
                   style={{ width: `${pct}%` }}
                 />
               </div>
-            </Link>
+            </div>
           );
         })}
       </div>

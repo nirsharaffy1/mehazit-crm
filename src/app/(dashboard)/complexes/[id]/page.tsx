@@ -112,9 +112,26 @@ export default async function ComplexDetailPage({ params }: { params: Promise<{ 
               <h1 className="page-title">{complex.name}</h1>
               {complex.domain && <span className="badge badge-gray">{complex.domain.name}</span>}
             </div>
-            <p className="flex items-center gap-1.5 text-sm text-dark/50 dark:text-cream/50">
-              <MapPin size={14} /> {complex.address}, {complex.city}
-            </p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="flex items-center gap-1.5 text-sm text-dark/50 dark:text-cream/50">
+                <MapPin size={14} /> {complex.address}, {complex.city}
+              </p>
+              <a
+                href={
+                  complex.lat && complex.lng
+                    ? `https://waze.com/ul?ll=${complex.lat},${complex.lng}&navigate=yes`
+                    : `https://waze.com/ul?q=${encodeURIComponent(`${complex.address}, ${complex.city}`)}&navigate=yes`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-[#06C167]/10 text-[#06C167] hover:bg-[#06C167]/20 transition-colors border border-[#06C167]/20"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2C7.03 2 3 6.03 3 11c0 3.31 1.78 6.21 4.44 7.82L12 22l4.56-3.18C19.22 17.21 21 14.31 21 11c0-4.97-4.03-9-9-9zm0 13c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/>
+                </svg>
+                נווט ב-Waze
+              </a>
+            </div>
           </div>
           <div className="flex gap-2 flex-wrap">
             {canAssign && (
