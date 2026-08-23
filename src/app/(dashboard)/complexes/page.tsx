@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { CrmRole } from "@/types";
+import { Prisma } from "@prisma/client";
 import Link from "next/link";
 import { Building2, Plus } from "lucide-react";
 import ComplexListClient from "@/components/features/ComplexListClient";
@@ -18,7 +19,7 @@ async function getComplexes(role: CrmRole, userId: string, domainId: string | nu
     return { assignments, complexes: null };
   }
 
-  let whereComplex: object = { isActive: true };
+  let whereComplex: Prisma.CrmComplexWhereInput = { isActive: true };
   if (role === "DOMAIN_MANAGER") {
     const userDomains = await prisma.crmUser.findUnique({
       where: { id: userId },
@@ -38,7 +39,7 @@ async function getComplexes(role: CrmRole, userId: string, domainId: string | nu
   }
 
   const complexes = await prisma.crmComplex.findMany({
-    where: whereComplex as Parameters<typeof prisma.crmComplex.findMany>[0]["where"],
+    where: whereComplex,
     include: {
       domain: true,
       assignments: {
