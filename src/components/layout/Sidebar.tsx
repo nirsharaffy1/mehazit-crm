@@ -51,11 +51,9 @@ export default function Sidebar({ userRole, userName }: SidebarProps) {
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      <div className="px-4 pt-5 pb-4 border-b border-white/10">
-        <p className="font-display text-gold font-semibold text-base leading-tight">
-          מהחזית אל הבית
-        </p>
-        <p className="text-cream/40 text-xs mt-0.5">ניהול פנימי</p>
+      <div className="px-4 pt-4 pb-4 border-b border-white/10">
+        <img src="/logo-transparent.png" alt="מהחזית אל הבית" className="h-12 w-auto object-contain" />
+        <p className="text-cream/40 text-xs mt-1">ניהול פנימי</p>
       </div>
 
       <nav className="flex-1 px-2 py-4 space-y-0.5 overflow-y-auto">
