@@ -3,12 +3,13 @@ import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
 import EditComplexForm from "@/components/features/EditComplexForm";
 
-export default async function EditComplexPage({ params }: { params: { id: string } }) {
+export default async function EditComplexPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const session = await auth();
   if (!session?.user || session.user.role !== "GENERAL_ADMIN") redirect("/dashboard");
 
   const [complex, domains] = await Promise.all([
-    prisma.crmComplex.findUnique({ where: { id: params.id } }),
+    prisma.crmComplex.findUnique({ where: { id } }),
     prisma.crmDomain.findMany({ orderBy: { name: "asc" } }),
   ]);
 
