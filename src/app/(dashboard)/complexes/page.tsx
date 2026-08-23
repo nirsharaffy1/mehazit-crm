@@ -29,7 +29,6 @@ async function getComplexes(role: CrmRole, userId: string, domainId: string | nu
       assignments: {
         where: { isActive: true },
         include: { user: { select: { fullName: true } } },
-        take: 1,
         orderBy: { assignedAt: "desc" },
       },
       _count: { select: { visits: true } },

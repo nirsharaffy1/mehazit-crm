@@ -58,8 +58,10 @@ export default async function ComplexDetailPage({ params }: { params: Promise<{ 
   const complex = await getComplex(id, role, session.user.id);
   if (!complex) notFound();
 
-  const activeAssignment = complex.assignments[0];
+  const activeAssignments = complex.assignments;
+  const activeAssignment = activeAssignments[0];
   const days = activeAssignment ? daysRemaining(activeAssignment.deadlineAt) : null;
+  const activeManagerIds = activeAssignments.map((a) => a.user.id);
 
   const canAssign = role === "GENERAL_ADMIN" || role === "DOMAIN_MANAGER";
   const canAddVisit = role === "AREA_MANAGER" || !!activeAssignment;
@@ -114,7 +116,7 @@ export default async function ComplexDetailPage({ params }: { params: Promise<{ 
           </div>
           <div className="flex gap-2 flex-wrap">
             {canAssign && (
-              <AssignModal complexId={complex.id} complexName={complex.name} />
+              <AssignModal complexId={complex.id} complexName={complex.name} activeManagerIds={activeManagerIds} />
             )}
             {role === "GENERAL_ADMIN" && (
               <Link href={`/complexes/${complex.id}/edit`} className="btn-ghost text-sm">
@@ -152,55 +154,63 @@ export default async function ComplexDetailPage({ params }: { params: Promise<{ 
       </div>
 
       {/* Assignment */}
-      {activeAssignment && days !== null ? (
+      {activeAssignments.length > 0 && days !== null ? (
         <div className="card p-4">
           <h2 className="section-title mb-3 flex items-center gap-2">
-            <Clock size={16} className="text-gold" /> הקצאה פעילה
+            <Clock size={16} className="text-gold" /> הקצאות פעילות ({activeAssignments.length})
           </h2>
-          <div className="flex items-center justify-between gap-4 flex-wrap">
+
+          {/* Shared deadline bar (all assignments share the same deadlineAt) */}
+          <div className="flex items-center justify-between gap-4 flex-wrap mb-3">
             <div>
-              <p className="text-sm font-medium text-dark dark:text-cream">{activeAssignment.user.fullName}</p>
-              <p className="text-xs text-dark/40 dark:text-cream/40 mt-0.5">
+              <p className="text-xs text-dark/40 dark:text-cream/40">
                 הוקצה: {formatDate(activeAssignment.assignedAt)} · יעד: {formatDate(activeAssignment.deadlineAt)}
               </p>
               {activeAssignment.note && (
                 <p className="text-xs text-dark/50 dark:text-cream/50 mt-1 italic">{activeAssignment.note}</p>
               )}
             </div>
-            <div className="flex items-center gap-3">
-              <div className="text-left">
-                <p className={`text-xl font-bold tabular-nums ${deadlineColor(days)}`}>
-                  {days < 0 ? `חרג ב-${Math.abs(days)}` : days} ימים
-                </p>
-                {days < 0 && <span className="badge badge-red text-xs">חריגה</span>}
-                {days >= 0 && days <= 7 && <span className="badge badge-gold text-xs">שבוע אחרון</span>}
-              </div>
-              {activeAssignment.user.phone && days <= 7 && (
-                <a
-                  href={buildWhatsappUrl(
-                    activeAssignment.user.phone,
-                    reminderWhatsappMessage(activeAssignment.user.fullName, complex.name, complex.city, Math.max(0, days))
-                  )}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-primary text-sm flex items-center gap-1.5"
-                >
-                  <MessageCircle size={15} /> שלח תזכורת
-                </a>
-              )}
+            <div className="text-left">
+              <p className={`text-xl font-bold tabular-nums ${deadlineColor(days)}`}>
+                {days < 0 ? `חרג ב-${Math.abs(days)}` : days} ימים
+              </p>
+              {days < 0 && <span className="badge badge-red text-xs">חריגה</span>}
+              {days >= 0 && days <= 7 && <span className="badge badge-gold text-xs">שבוע אחרון</span>}
             </div>
           </div>
-          <div className="mt-3 deadline-bar">
+          <div className="deadline-bar mb-4">
             <div
               className={`deadline-bar-fill ${days < 0 ? "bg-red-500" : days <= 7 ? "bg-amber-500" : "bg-gold"}`}
               style={{ width: `${Math.max(0, Math.min(100, ((activeAssignment.deadlineDays - days) / activeAssignment.deadlineDays) * 100))}%` }}
             />
           </div>
+
+          {/* List of assignees */}
+          <div className="space-y-2">
+            {activeAssignments.map((a) => (
+              <div key={a.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-offwhite dark:bg-dark-soft">
+                <p className="text-sm font-medium text-dark dark:text-cream">{a.user.fullName}</p>
+                {a.user.phone && days <= 7 && (
+                  <a
+                    href={buildWhatsappUrl(
+                      a.user.phone,
+                      reminderWhatsappMessage(a.user.fullName, complex.name, complex.city, Math.max(0, days))
+                    )}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-primary text-xs flex items-center gap-1"
+                  >
+                    <MessageCircle size={13} /> תזכורת
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       ) : canAssign && (
         <div className="card p-4 border-dashed text-center">
           <p className="muted mb-2">מתחם זה אינו מוקצה</p>
-          <AssignModal complexId={complex.id} complexName={complex.name} />
+          <AssignModal complexId={complex.id} complexName={complex.name} activeManagerIds={[]} />
         </div>
       )}
 

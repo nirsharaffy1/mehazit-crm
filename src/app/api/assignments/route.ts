@@ -9,33 +9,52 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { complexId, userId, deadlineDays, note } = body;
+  const { complexId, userIds, deadlineDays, note } = body as {
+    complexId: string;
+    userIds: string[];
+    deadlineDays: number;
+    note?: string;
+  };
 
-  // Deactivate existing active assignment
+  if (!Array.isArray(userIds) || userIds.length === 0)
+    return NextResponse.json({ error: "יש לבחור לפחות מנהל אחד" }, { status: 400 });
+
   await prisma.crmComplexAssignment.updateMany({
     where: { complexId, isActive: true },
     data: { isActive: false },
   });
 
-  const assignment = await prisma.crmComplexAssignment.create({
-    data: {
-      complexId,
-      userId,
-      assignedById: session.user.id,
-      deadlineDays: Number(deadlineDays),
-      deadlineAt: addDays(new Date(), Number(deadlineDays)),
-      note: note || null,
-    },
-    include: { complex: { select: { city: true, name: true } } },
-  });
+  const deadline = addDays(new Date(), Number(deadlineDays));
+
+  const assignments = await Promise.all(
+    userIds.map((userId) =>
+      prisma.crmComplexAssignment.create({
+        data: {
+          complexId,
+          userId,
+          assignedById: session.user.id,
+          deadlineDays: Number(deadlineDays),
+          deadlineAt: deadline,
+          note: note || null,
+        },
+        include: {
+          user: { select: { fullName: true, phone: true } },
+          complex: { select: { city: true, name: true } },
+        },
+      })
+    )
+  );
 
   await prisma.crmActivityLog.create({
     data: {
       userId: session.user.id,
       action: "COMPLEX_ASSIGNED",
-      metadata: { complexId, assignedTo: userId, deadlineDays },
+      metadata: { complexId, assignedTo: userIds, deadlineDays },
     },
   });
 
-  return NextResponse.json({ assignment, city: assignment.complex.city });
+  return NextResponse.json({
+    assignments,
+    city: assignments[0]?.complex.city ?? "",
+  });
 }

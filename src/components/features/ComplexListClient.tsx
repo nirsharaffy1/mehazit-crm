@@ -176,13 +176,15 @@ export default function ComplexListClient({ complexes, assignments, isAreaManage
                     <p className="flex items-center gap-1 text-xs text-dark/50 dark:text-cream/50">
                       <MapPin size={11} /> {c.address}, {c.city}
                     </p>
-                    {activeAssignment && (
-                      <p className="text-xs text-dark/40 dark:text-cream/40 mt-1">מוקצה ל: {activeAssignment.user.fullName}</p>
+                    {c.assignments.length > 0 && (
+                      <p className="text-xs text-dark/40 dark:text-cream/40 mt-1">
+                        מוקצה ל: {c.assignments.map((a) => a.user.fullName).join(", ")}
+                      </p>
                     )}
                   </Link>
                   <div className="flex flex-col items-end gap-2 flex-shrink-0">
                     <p className="text-xs text-dark/40 dark:text-cream/40">{c._count?.visits ?? 0} ביקורים</p>
-                    {!activeAssignment && <span className="badge badge-gray">לא מוקצה</span>}
+                    {c.assignments.length === 0 && <span className="badge badge-gray">לא מוקצה</span>}
                     {isAdmin && <DeleteButton id={c.id} name={c.name} onDeleted={() => removeItem(c.id)} />}
                   </div>
                 </div>
@@ -206,7 +208,7 @@ export default function ComplexListClient({ complexes, assignments, isAreaManage
               </thead>
               <tbody>
                 {items.map((c) => {
-                  const mgr = c.assignments?.[0]?.user?.fullName ?? "—";
+                  const mgr = c.assignments?.length ? c.assignments.map((a) => a.user.fullName).join(", ") : "—";
                   return (
                     <tr key={c.id} className="border-b border-line last:border-0 hover:bg-gold/5 transition-colors">
                       <td className="px-4 py-2.5">
