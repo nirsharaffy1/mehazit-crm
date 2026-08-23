@@ -2,7 +2,13 @@
 import { useState } from "react";
 import { Pencil, Trash2, Plus, Check, X, Loader2 } from "lucide-react";
 
-interface Domain { id: string; name: string; _count: { users: number; complexes: number } }
+interface DomainManager { id: string; fullName: string }
+interface Domain {
+  id: string;
+  name: string;
+  _count: { users: number; complexes: number };
+  users: DomainManager[];
+}
 
 export default function RegionsClient({ domains: initial }: { domains: Domain[] }) {
   const [domains, setDomains] = useState(initial);
@@ -60,7 +66,10 @@ export default function RegionsClient({ domains: initial }: { domains: Domain[] 
               <div className="flex-1">
                 <p className="font-medium text-dark dark:text-cream">{d.name}</p>
                 <p className="text-xs text-dark/40 dark:text-cream/40">
-                  {d._count.users} משתמשים · {d._count.complexes} מתחמים
+                  {d.users.length > 0
+                    ? d.users.map(u => u.fullName).join(", ")
+                    : "ללא מנהל תחום"}
+                  {" · "}{d._count.complexes} מתחמים · {d._count.users} משתמשים
                 </p>
               </div>
               <button onClick={() => { setEditing(d.id); setEditName(d.name); }} className="btn-ghost p-2 text-dark/50 hover:text-dark dark:text-cream/50 dark:hover:text-cream">

@@ -8,7 +8,13 @@ export default async function RegionsPage() {
   if (!session?.user || session.user.role !== "GENERAL_ADMIN") redirect("/dashboard");
 
   const domains = await prisma.crmDomain.findMany({
-    include: { _count: { select: { users: true, complexes: true } } },
+    include: {
+      _count: { select: { users: true, complexes: true } },
+      users: {
+        where: { role: "DOMAIN_MANAGER", isActive: true },
+        select: { id: true, fullName: true },
+      },
+    },
     orderBy: { name: "asc" },
   });
 
