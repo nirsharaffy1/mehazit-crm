@@ -29,6 +29,7 @@ export default async function LoginLinksPage() {
   const admins = active.filter((u) => u.role === "GENERAL_ADMIN").map(toRow);
 
   const dbDomains = await prisma.crmDomain.findMany({ orderBy: { name: "asc" } });
+  const domainNameSet = new Set(dbDomains.map((d) => d.name));
   const domains: DomainGroup[] = dbDomains.map((dom) => ({
     domainName: dom.name,
     domainManager: (() => {
@@ -40,6 +41,11 @@ export default async function LoginLinksPage() {
       .map(toRow),
   }));
 
+  // Users who are active, not admin, and don't belong to any known domain
+  const unassigned = active
+    .filter((u) => u.role !== "GENERAL_ADMIN" && (!u.domain || !domainNameSet.has(u.domain.name)))
+    .map(toRow);
+
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto w-full">
       <div>
@@ -48,7 +54,7 @@ export default async function LoginLinksPage() {
           שלחו לכל חבר צוות את הקישור וההודעה האישית שלו
         </p>
       </div>
-      <LoginLinksClient admins={admins} domains={domains} inactive={inactive} />
+      <LoginLinksClient admins={admins} domains={domains} inactive={inactive} unassigned={unassigned} />
     </div>
   );
 }

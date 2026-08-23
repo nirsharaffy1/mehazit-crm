@@ -81,6 +81,7 @@ interface Props {
   admins: UserRow[];
   domains: DomainGroup[];
   inactive: UserRow[];
+  unassigned: UserRow[];
 }
 
 function UserRowItem({ user }: { user: UserRow }) {
@@ -102,7 +103,7 @@ function UserRowItem({ user }: { user: UserRow }) {
   );
 }
 
-export default function LoginLinksClient({ admins, domains, inactive }: Props) {
+export default function LoginLinksClient({ admins, domains, inactive, unassigned }: Props) {
   const [showInactive, setShowInactive] = useState(false);
 
   return (
@@ -146,6 +147,18 @@ export default function LoginLinksClient({ admins, domains, inactive }: Props) {
           </div>
         </section>
       ))}
+
+      {/* Unassigned */}
+      {unassigned.length > 0 && (
+        <section>
+          <h2 className="text-xs font-semibold text-amber-500 uppercase tracking-wider mb-2 px-1">
+            ללא תחום ({unassigned.length})
+          </h2>
+          <div className="card px-4">
+            {unassigned.map((u) => <UserRowItem key={u.id} user={u} />)}
+          </div>
+        </section>
+      )}
 
       {/* Inactive */}
       {inactive.length > 0 && (
