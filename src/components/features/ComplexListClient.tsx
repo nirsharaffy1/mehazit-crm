@@ -3,7 +3,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { Building2, MapPin, Clock, LayoutGrid, List, Trash2, X } from "lucide-react";
 import { daysRemaining, deadlineColor, formatDate } from "@/lib/utils";
-import { PHASE_LABELS } from "@/types";
+import { PHASE_LABELS, PHASES } from "@/types";
+
+function phaseLabel(phase: string) {
+  const idx = PHASES.indexOf(phase as typeof PHASES[number]);
+  const label = PHASE_LABELS[phase as keyof typeof PHASE_LABELS] ?? phase;
+  return idx >= 0 ? `שלב ${idx + 1} · ${label}` : label;
+}
 
 export interface ComplexItem {
   id: string;
@@ -176,7 +182,7 @@ export default function ComplexListClient({ complexes, assignments, isAreaManage
                       <h2 className="text-sm font-semibold text-dark dark:text-cream truncate hover:text-gold transition-colors">{c.name}</h2>
                       {c.domain && <span className="badge badge-gray text-xs">{c.domain.name}</span>}
                       <span className="badge text-xs bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 border-blue-200 dark:border-blue-800">
-                        {PHASE_LABELS[c.phase as keyof typeof PHASE_LABELS] ?? c.phase}
+                        {phaseLabel(c.phase)}
                       </span>
                     </div>
                     <p className="flex items-center gap-1 text-xs text-dark/50 dark:text-cream/50">
@@ -244,7 +250,7 @@ export default function ComplexListClient({ complexes, assignments, isAreaManage
                       </td>
                       <td className="px-4 py-2.5">
                         <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 whitespace-nowrap">
-                          {PHASE_LABELS[c.phase as keyof typeof PHASE_LABELS] ?? c.phase}
+                          {phaseLabel(c.phase)}
                         </span>
                       </td>
                       <td className="px-4 py-2.5 text-dark/60 dark:text-cream/60">{c.city}</td>
