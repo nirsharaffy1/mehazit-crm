@@ -9,8 +9,12 @@ export async function GET(req: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const role = req.nextUrl.searchParams.get("role") as CrmRole | null;
+  const roles = req.nextUrl.searchParams.get("roles");
+  const roleFilter = roles
+    ? { role: { in: roles.split(",") as CrmRole[] } }
+    : role ? { role } : {};
   const users = await prisma.crmUser.findMany({
-    where: { isActive: true, ...(role ? { role } : {}) },
+    where: { isActive: true, ...roleFilter },
     select: { id: true, fullName: true, email: true, role: true, phone: true, domainId: true, domain: { select: { name: true } }, lastLoginAt: true, createdAt: true },
     orderBy: { fullName: "asc" },
   });

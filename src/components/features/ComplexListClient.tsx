@@ -10,7 +10,7 @@ export interface ComplexItem {
   city: string;
   address: string;
   domain: { name: string } | null;
-  assignments: Array<{ user: { fullName: string } }>;
+  assignments: Array<{ id: string; user: { fullName: string }; deadlineAt: string; deadlineDays: number }>;
   _count: { visits: number };
 }
 
@@ -164,7 +164,8 @@ export default function ComplexListClient({ complexes, assignments, isAreaManage
       ) : view === "cards" ? (
         <div className="grid gap-3">
           {items.map((c) => {
-            const activeAssignment = c.assignments?.[0];
+            const firstAssignment = c.assignments?.[0];
+            const days = firstAssignment ? daysRemaining(new Date(firstAssignment.deadlineAt)) : null;
             return (
               <div key={c.id} className="card p-4 hover:border-gold transition-all">
                 <div className="flex items-start justify-between gap-3">
@@ -183,11 +184,27 @@ export default function ComplexListClient({ complexes, assignments, isAreaManage
                     )}
                   </Link>
                   <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    <p className="text-xs text-dark/40 dark:text-cream/40">{c._count?.visits ?? 0} ביקורים</p>
+                    {days !== null ? (
+                      <p className={`text-sm font-bold tabular-nums ${deadlineColor(days)}`}>
+                        {days < 0 ? `חרג ב-${Math.abs(days)}י'` : `${days} ימים`}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-dark/40 dark:text-cream/40">{c._count?.visits ?? 0} ביקורים</p>
+                    )}
                     {c.assignments.length === 0 && <span className="badge badge-gray">לא מוקצה</span>}
+                    {days !== null && days < 0 && <span className="badge badge-red text-xs">חריגה</span>}
+                    {days !== null && days >= 0 && days <= 7 && <span className="badge badge-gold text-xs">דחוף</span>}
                     {isAdmin && <DeleteButton id={c.id} name={c.name} onDeleted={() => removeItem(c.id)} />}
                   </div>
                 </div>
+                {days !== null && firstAssignment && (
+                  <div className="mt-3 deadline-bar">
+                    <div
+                      className={`deadline-bar-fill ${days < 0 ? "bg-red-500" : days <= 7 ? "bg-amber-500" : "bg-gold"}`}
+                      style={{ width: `${Math.max(0, Math.min(100, ((firstAssignment.deadlineDays - days) / firstAssignment.deadlineDays) * 100))}%` }}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}
@@ -203,12 +220,15 @@ export default function ComplexListClient({ complexes, assignments, isAreaManage
                   <th className="text-right px-4 py-2.5 text-xs font-semibold text-dark/50 dark:text-cream/50">תחום</th>
                   <th className="text-right px-4 py-2.5 text-xs font-semibold text-dark/50 dark:text-cream/50">מנהל איזור</th>
                   <th className="text-right px-4 py-2.5 text-xs font-semibold text-dark/50 dark:text-cream/50">ביקורים</th>
+                  <th className="text-right px-4 py-2.5 text-xs font-semibold text-dark/50 dark:text-cream/50">נותר</th>
                   {isAdmin && <th className="px-4 py-2.5 w-8"></th>}
                 </tr>
               </thead>
               <tbody>
                 {items.map((c) => {
                   const mgr = c.assignments?.length ? c.assignments.map((a) => a.user.fullName).join(", ") : "—";
+                  const firstA = c.assignments?.[0];
+                  const daysLeft = firstA ? daysRemaining(new Date(firstA.deadlineAt)) : null;
                   return (
                     <tr key={c.id} className="border-b border-line last:border-0 hover:bg-gold/5 transition-colors">
                       <td className="px-4 py-2.5">
@@ -220,6 +240,9 @@ export default function ComplexListClient({ complexes, assignments, isAreaManage
                       <td className="px-4 py-2.5 text-dark/60 dark:text-cream/60">{c.domain?.name ?? "—"}</td>
                       <td className="px-4 py-2.5 text-dark/60 dark:text-cream/60">{mgr}</td>
                       <td className="px-4 py-2.5 text-dark/60 dark:text-cream/60">{c._count?.visits ?? 0}</td>
+                      <td className={`px-4 py-2.5 text-sm font-medium tabular-nums ${daysLeft !== null ? deadlineColor(daysLeft) : "text-dark/30 dark:text-cream/30"}`}>
+                        {daysLeft !== null ? (daysLeft < 0 ? `חרג ב-${Math.abs(daysLeft)}` : `${daysLeft} י'`) : "—"}
+                      </td>
                       {isAdmin && (
                         <td className="px-4 py-2.5">
                           <DeleteButton id={c.id} name={c.name} onDeleted={() => removeItem(c.id)} />

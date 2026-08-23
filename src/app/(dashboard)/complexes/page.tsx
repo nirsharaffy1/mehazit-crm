@@ -29,7 +29,7 @@ async function getComplexes(role: CrmRole, userId: string, domainId: string | nu
       assignments: {
         where: { isActive: true },
         include: { user: { select: { fullName: true } } },
-        orderBy: { assignedAt: "desc" },
+        orderBy: { deadlineAt: "asc" },
       },
       _count: { select: { visits: true } },
     },
@@ -69,7 +69,12 @@ export default async function ComplexesPage() {
     city: c.city,
     address: c.address,
     domain: c.domain ? { name: c.domain.name } : null,
-    assignments: c.assignments.map((a) => ({ user: { fullName: a.user.fullName } })),
+    assignments: c.assignments.map((a) => ({
+      id: a.id,
+      user: { fullName: a.user.fullName },
+      deadlineAt: a.deadlineAt.toISOString(),
+      deadlineDays: a.deadlineDays,
+    })),
     _count: { visits: c._count.visits },
   }));
 

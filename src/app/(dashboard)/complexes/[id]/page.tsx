@@ -9,6 +9,7 @@ import {
   CheckCircle, AlertTriangle, Clock, FileText, UserCheck, Layers
 } from "lucide-react";
 import AssignModal from "@/components/features/AssignModal";
+import EditDeadlineButton from "@/components/features/EditDeadlineButton";
 import AddVisitModal from "@/components/features/AddVisitModal";
 import PhaseTimeline from "@/components/features/PhaseTimeline";
 import ComplexNotes from "@/components/features/ComplexNotes";
@@ -170,12 +171,20 @@ export default async function ComplexDetailPage({ params }: { params: Promise<{ 
                 <p className="text-xs text-dark/50 dark:text-cream/50 mt-1 italic">{activeAssignment.note}</p>
               )}
             </div>
-            <div className="text-left">
-              <p className={`text-xl font-bold tabular-nums ${deadlineColor(days)}`}>
-                {days < 0 ? `חרג ב-${Math.abs(days)}` : days} ימים
-              </p>
-              {days < 0 && <span className="badge badge-red text-xs">חריגה</span>}
-              {days >= 0 && days <= 7 && <span className="badge badge-gold text-xs">שבוע אחרון</span>}
+            <div className="text-left flex items-center gap-3">
+              <div>
+                <p className={`text-xl font-bold tabular-nums ${deadlineColor(days)}`}>
+                  {days < 0 ? `חרג ב-${Math.abs(days)}` : days} ימים
+                </p>
+                {days < 0 && <span className="badge badge-red text-xs">חריגה</span>}
+                {days >= 0 && days <= 7 && <span className="badge badge-gold text-xs">שבוע אחרון</span>}
+              </div>
+              {canAssign && (
+                <EditDeadlineButton
+                  assignmentId={activeAssignment.id}
+                  currentDays={activeAssignment.deadlineDays}
+                />
+              )}
             </div>
           </div>
           <div className="deadline-bar mb-4">

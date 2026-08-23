@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { X, Loader2, MessageCircle, Check } from "lucide-react";
 import { buildWhatsappUrl, assignmentWhatsappMessage } from "@/lib/utils";
 
-interface AreaManager { id: string; fullName: string; phone: string | null; }
+interface AreaManager { id: string; fullName: string; phone: string | null; role: string; }
 
 export default function AssignModal({
   complexId,
@@ -25,7 +25,7 @@ export default function AssignModal({
   useEffect(() => {
     if (open) {
       setSelectedIds(new Set(activeManagerIds));
-      fetch("/api/users?role=AREA_MANAGER")
+      fetch("/api/users?roles=AREA_MANAGER,DOMAIN_MANAGER")
         .then((r) => r.json())
         .then((d) => setManagers(d.users ?? []));
     }
@@ -112,25 +112,33 @@ export default function AssignModal({
                   {managers.length === 0 ? (
                     <p className="text-xs text-dark/40 dark:text-cream/40">טוען...</p>
                   ) : (
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto border border-line rounded-lg p-2">
-                      {managers.map((m) => {
-                        const checked = selectedIds.has(m.id);
+                    <div className="max-h-52 overflow-y-auto border border-line rounded-lg p-2 space-y-3">
+                      {(["DOMAIN_MANAGER", "AREA_MANAGER"] as const).map((roleKey) => {
+                        const group = managers.filter((m) => m.role === roleKey);
+                        if (!group.length) return null;
                         return (
-                          <label
-                            key={m.id}
-                            className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${checked ? "bg-gold/10 border border-gold/30" : "hover:bg-offwhite dark:hover:bg-dark-soft border border-transparent"}`}
-                          >
-                            <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${checked ? "bg-gold border-gold" : "border-dark/30 dark:border-cream/30"}`}>
-                              {checked && <Check size={11} className="text-dark" strokeWidth={3} />}
+                          <div key={roleKey}>
+                            <p className="text-[10px] font-semibold text-dark/40 dark:text-cream/40 uppercase tracking-wide px-1 mb-1">
+                              {roleKey === "DOMAIN_MANAGER" ? "מנהלי תחום" : "מנהלי איזור"}
+                            </p>
+                            <div className="space-y-1">
+                              {group.map((m) => {
+                                const checked = selectedIds.has(m.id);
+                                return (
+                                  <label
+                                    key={m.id}
+                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${checked ? "bg-gold/10 border border-gold/30" : "hover:bg-offwhite dark:hover:bg-dark-soft border border-transparent"}`}
+                                  >
+                                    <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${checked ? "bg-gold border-gold" : "border-dark/30 dark:border-cream/30"}`}>
+                                      {checked && <Check size={11} className="text-dark" strokeWidth={3} />}
+                                    </div>
+                                    <input type="checkbox" className="sr-only" checked={checked} onChange={() => toggleManager(m.id)} />
+                                    <span className="text-sm text-dark dark:text-cream">{m.fullName}</span>
+                                  </label>
+                                );
+                              })}
                             </div>
-                            <input
-                              type="checkbox"
-                              className="sr-only"
-                              checked={checked}
-                              onChange={() => toggleManager(m.id)}
-                            />
-                            <span className="text-sm text-dark dark:text-cream">{m.fullName}</span>
-                          </label>
+                          </div>
                         );
                       })}
                     </div>
