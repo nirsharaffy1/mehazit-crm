@@ -28,14 +28,15 @@ export default async function LoginLinksPage() {
 
   const admins = active.filter((u) => u.role === "GENERAL_ADMIN").map(toRow);
 
-  const domainNames = ["צפון", "מרכז", "דרום"];
-  const domains: DomainGroup[] = domainNames.map((name) => ({
-    domainName: name,
-    domainManager: active.find((u) => u.role === "DOMAIN_MANAGER" && u.domain?.name === name)
-      ? toRow(active.find((u) => u.role === "DOMAIN_MANAGER" && u.domain?.name === name)!)
-      : null,
+  const dbDomains = await prisma.crmDomain.findMany({ orderBy: { name: "asc" } });
+  const domains: DomainGroup[] = dbDomains.map((dom) => ({
+    domainName: dom.name,
+    domainManager: (() => {
+      const mgr = active.find((u) => u.role === "DOMAIN_MANAGER" && u.domain?.name === dom.name);
+      return mgr ? toRow(mgr) : null;
+    })(),
     areaManagers: active
-      .filter((u) => u.role === "AREA_MANAGER" && u.domain?.name === name)
+      .filter((u) => u.role === "AREA_MANAGER" && u.domain?.name === dom.name)
       .map(toRow),
   }));
 

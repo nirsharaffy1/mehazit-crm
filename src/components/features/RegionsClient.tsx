@@ -31,7 +31,7 @@ export default function RegionsClient({ domains: initial }: { domains: Domain[] 
     setLoading(true);
     const res = await fetch("/api/regions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: newName }) });
     const { domain } = await res.json();
-    setDomains(d => [...d, { ...domain, _count: { users: 0, complexes: 0 } }]);
+    setDomains(d => [...d, { ...domain, _count: { users: 0, complexes: 0 }, users: [] }]);
     setNewName("");
     setAdding(false);
     setLoading(false);
