@@ -21,6 +21,7 @@ const navItems = [
   { href: "/dashboard", label: "לוח בקרה", icon: LayoutDashboard, roles: ["GENERAL_ADMIN", "DOMAIN_MANAGER", "AREA_MANAGER"] },
   { href: "/complexes", label: "מתחמים", icon: Building2, roles: ["GENERAL_ADMIN", "DOMAIN_MANAGER", "AREA_MANAGER"] },
   { href: "/users", label: "ניהול משתמשים", icon: Users, roles: ["GENERAL_ADMIN"] },
+  { href: "/my-team", label: "הצוות שלי", icon: Users, roles: ["DOMAIN_MANAGER"] },
   { href: "/regions", label: "ניהול תחומים", icon: MapPin, roles: ["GENERAL_ADMIN"] },
   { href: "/map", label: "מפה", icon: Map, roles: ["GENERAL_ADMIN", "DOMAIN_MANAGER"] },
   { href: "/calendar", label: "לוח שנה", icon: CalendarDays, roles: ["GENERAL_ADMIN", "DOMAIN_MANAGER", "AREA_MANAGER"] },
