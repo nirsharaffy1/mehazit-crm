@@ -6,7 +6,7 @@ import { formatDate, daysRemaining, deadlineColor, buildWhatsappUrl, reminderWha
 import Link from "next/link";
 import {
   ArrowRight, MapPin, Calendar, MessageCircle,
-  CheckCircle, AlertTriangle, Clock, FileText, UserCheck, Layers
+  CheckCircle, AlertTriangle, Clock, FileText, UserCheck, Layers, Table2
 } from "lucide-react";
 import AssignModal from "@/components/features/AssignModal";
 import EditDeadlineButton from "@/components/features/EditDeadlineButton";
@@ -16,12 +16,15 @@ import AssemblyDetails from "@/components/features/AssemblyDetails";
 import ComplexNotes from "@/components/features/ComplexNotes";
 import ResidentContacts from "@/components/features/ResidentContacts";
 import PrintButton from "@/components/features/PrintButton";
+import CancelAssignmentButton from "@/components/features/CancelAssignmentButton";
+import ComplexFiles from "@/components/features/ComplexFiles";
 
 async function getComplex(id: string, role: CrmRole, userId: string) {
   const complex = await prisma.crmComplex.findUnique({
     where: { id },
     include: {
       domain: true,
+      files: { orderBy: { createdAt: "desc" } },
       assignments: {
         where: { isActive: true },
         include: { user: { select: { id: true, fullName: true, phone: true } } },
@@ -77,6 +80,14 @@ export default async function ComplexDetailPage({ params }: { params: Promise<{ 
     notes: lastVisit.notes,
   } : undefined;
 
+  const serializedFiles = complex.files.map((f) => ({
+    id: f.id,
+    name: f.name,
+    url: f.url,
+    fileType: f.fileType,
+    createdAt: f.createdAt.toISOString(),
+  }));
+
   const serializedNotes = complex.notes.map((n) => ({
     id: n.id,
     content: n.content,
@@ -131,6 +142,16 @@ export default async function ComplexDetailPage({ params }: { params: Promise<{ 
                 </svg>
                 נווט ב-Waze
               </a>
+              {complex.sheetsUrl && (
+                <a
+                  href={complex.sheetsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 transition-colors border border-emerald-500/20"
+                >
+                  <Table2 size={12} /> טבלת שליטה
+                </a>
+              )}
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -231,19 +252,28 @@ export default async function ComplexDetailPage({ params }: { params: Promise<{ 
             {activeAssignments.map((a) => (
               <div key={a.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-offwhite dark:bg-dark-soft">
                 <p className="text-sm font-medium text-dark dark:text-cream">{a.user.fullName}</p>
-                {a.user.phone && days <= 7 && (
-                  <a
-                    href={buildWhatsappUrl(
-                      a.user.phone,
-                      reminderWhatsappMessage(a.user.fullName, complex.name, complex.city, Math.max(0, days))
-                    )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-primary text-xs flex items-center gap-1"
-                  >
-                    <MessageCircle size={13} /> תזכורת
-                  </a>
-                )}
+                <div className="flex items-center gap-2">
+                  {a.user.phone && days !== null && days <= 7 && (
+                    <a
+                      href={buildWhatsappUrl(
+                        a.user.phone,
+                        reminderWhatsappMessage(a.user.fullName, complex.name, complex.city, Math.max(0, days))
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary text-xs flex items-center gap-1"
+                    >
+                      <MessageCircle size={13} /> תזכורת
+                    </a>
+                  )}
+                  {canAssign && (
+                    <CancelAssignmentButton
+                      assignmentId={a.id}
+                      userName={a.user.fullName}
+                      onCancelled={() => {}}
+                    />
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -257,6 +287,9 @@ export default async function ComplexDetailPage({ params }: { params: Promise<{ 
 
       {/* Resident Contacts */}
       <ResidentContacts complexId={complex.id} initialResidents={serializedResidents} canEdit={canAssign} />
+
+      {/* Files */}
+      <ComplexFiles complexId={complex.id} initialFiles={serializedFiles} canEdit={canAssign} />
 
       {/* Visits */}
       <div className="card p-4">

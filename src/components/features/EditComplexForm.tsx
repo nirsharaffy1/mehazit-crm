@@ -8,7 +8,7 @@ interface Complex {
   id: string; name: string; address: string; city: string; domainId: string | null;
   gush: string | null; helka: string | null; unitCount: number | null;
   buildingCount: number | null; developerName: string | null; description: string | null;
-  lat: number | null; lng: number | null;
+  lat: number | null; lng: number | null; sheetsUrl: string | null;
 }
 
 export default function EditComplexForm({ complex, domains }: { complex: Complex; domains: Domain[] }) {
@@ -27,6 +27,7 @@ export default function EditComplexForm({ complex, domains }: { complex: Complex
     description: complex.description ?? "",
     lat: complex.lat?.toString() ?? "",
     lng: complex.lng?.toString() ?? "",
+    sheetsUrl: complex.sheetsUrl ?? "",
   });
 
   function update(k: string, v: string) { setForm(f => ({ ...f, [k]: v })); }
@@ -99,6 +100,10 @@ export default function EditComplexForm({ complex, domains }: { complex: Complex
       <div>
         <label className="label">תיאור / הערות</label>
         <textarea className="input resize-none" rows={3} value={form.description} onChange={e => update("description", e.target.value)} />
+      </div>
+      <div>
+        <label className="label">קישור טבלת שליטה (Google Sheets)</label>
+        <input className="input ltr" dir="ltr" placeholder="https://docs.google.com/spreadsheets/..." value={form.sheetsUrl} onChange={e => update("sheetsUrl", e.target.value)} />
       </div>
 
       {/* Coordinates */}

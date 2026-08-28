@@ -378,6 +378,7 @@ model CrmComplex {
   assemblyDate     DateTime?
   assemblyTime     String?
   assemblyLocation String?
+  sheetsUrl        String?
   createdAt        DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
@@ -385,8 +386,23 @@ model CrmComplex {
   visits      CrmVisit[]
   notes       CrmComplexNote[]
   residents   CrmResidentContact[]
+  files       CrmComplexFile[]
 
   @@map("CrmComplex")
+}
+
+model CrmComplexFile {
+  id           String     @id @default(cuid())
+  complexId    String
+  complex      CrmComplex @relation(fields: [complexId], references: [id])
+  name         String
+  url          String
+  fileType     String?
+  uploadedById String
+  createdAt    DateTime   @default(now())
+
+  @@index([complexId])
+  @@map("CrmComplexFile")
 }
 
 model CrmComplexAssignment {
